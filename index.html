@@ -172,6 +172,9 @@ details summary{cursor:pointer;color:var(--ink2);font-size:13px}
 #lpDisk{transition:transform .25s ease-out}
 @media (prefers-reduced-motion:reduce){#lpDisk{transition:none}}
 .lp-sec{cursor:pointer}
+.lp-cal summary{cursor:pointer;font-size:13px;color:var(--accent)}
+.lp-cal-body{display:flex;flex-direction:column;gap:8px;margin-top:8px;padding:10px;border:1px solid var(--line2);border-radius:10px;background:var(--bg)}
+.lp-cal-body .btn{padding:4px 10px;font-size:13px}
 .lp-read{display:flex;align-items:baseline;justify-content:center;gap:12px}
 .lp-read b{font-family:var(--serif);font-size:28px;font-variant-numeric:tabular-nums}
 .lp-read span{color:var(--ink2);font-size:16px}
@@ -435,6 +438,27 @@ table.ju tr.cur td{background:var(--brass-soft);color:var(--brass);font-weight:7
           <label for="lpSlider">手动转向</label>
           <input type="range" id="lpSlider" min="0" max="359" step="1" value="0">
         </div>
+        <details class="lp-cal" id="lpCalBox">
+          <summary>方向不准？校正</summary>
+          <div class="lp-cal-body">
+            <div class="note-s" id="lpRaw">原始读数：未启用</div>
+            <div class="field" style="flex-wrap:wrap">
+              <label for="lpRef">对照读数</label>
+              <input type="number" id="lpRef" min="0" max="359" step="1" placeholder="如 45" style="width:6em">
+              <button class="btn" id="lpRefGo">按此校正</button>
+            </div>
+            <p class="note-s" style="margin:0">把 iPad 保持同一个姿势，打开 iPad 的指南针 App 看度数，填进来点「按此校正」。</p>
+            <div class="field" style="flex-wrap:wrap">
+              <label>屏幕旋转修正</label>
+              <div class="seg" id="lpMode"><button data-v="1">自动</button><button data-v="0">不修正</button><button data-v="-1">反向</button></div>
+            </div>
+            <div class="field" style="flex-wrap:wrap">
+              <label>偏移</label>
+              <button class="btn" data-off="-90">−90°</button><button class="btn" data-off="90">+90°</button><button class="btn" data-off="180">180°</button><button class="btn" data-off="-5">−5°</button><button class="btn" data-off="5">+5°</button><button class="btn" data-off="reset">重置</button>
+              <span class="note-s" id="lpOffTxt"></span>
+            </div>
+          </div>
+        </details>
         <p class="note-s" id="lpStatus" style="margin:0">把设备平放，顶端对着你要看的方向。也可以直接拖动转盘或点击扇区。</p>
       </div>
       <div class="side">
@@ -10258,7 +10282,13 @@ for(const k in views)$('#tab-'+k).addEventListener('click',()=>showTab(k));
 // ---------- 罗盘 ----------
 const LP_ORDER=[1,8,3,4,9,2,7,6];
 const DIR8=['北','东北','东','东南','南','西南','西','西北'];
-const lp={heading:0,shown:0,live:false,sel:null};
+const lp={heading:0,shown:0,live:false,sel:null,raw:null,so:0,mode:1,off:0};
+try{const c=JSON.parse(localStorage.getItem('qm-lpcal')||'null');if(c){lp.mode=+c.mode;lp.off=+c.off;}}catch(e){}
+function lpSaveCal(){try{localStorage.setItem('qm-lpcal',JSON.stringify({mode:lp.mode,off:lp.off}))}catch(e){}}
+function lpCalc(){if(lp.raw===null)return;lp.heading=((lp.raw+lp.mode*lp.so+lp.off)%360+360)%360;}
+function lpCalUI(){document.querySelectorAll('#lpMode button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===lp.mode));
+  $('#lpOffTxt').textContent=`当前偏移 ${lp.off>0?'+':''}${lp.off}°`;
+  $('#lpRaw').textContent=lp.raw===null?'原始读数：未启用指南针':`原始读数 ${Math.round(lp.raw)}° · 屏幕旋转 ${lp.so}° · 修正后 ${Math.round(lp.heading)}°`;}
 function lpLevel(g){if(['开门','休门','生门'].includes(g.door))return 'ji';if(['伤门','惊门','死门'].includes(g.door))return 'xiong';return 'ping';}
 function renderLP(){
   const r=state.res;if(!r)return;
@@ -10333,10 +10363,10 @@ function lpOnOrient(e){
   if(typeof e.webkitCompassHeading==='number'&&!isNaN(e.webkitCompassHeading))h=e.webkitCompassHeading;
   else if(e.absolute&&typeof e.alpha==='number')h=360-e.alpha;
   if(h===null)return;
-  const so=(screen.orientation&&screen.orientation.angle)||window.orientation||0;
-  lp.heading=(h+so+360)%360;
+  lp.so=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(window.orientation||0);
+  lp.raw=h;lpCalc();
   if(!lp.live){lp.live=true;$('#lpStatus').textContent='指南针已启用。设备平放，顶端对着的方向就是箭头所指。';$('#lpStart').textContent='指南针运行中';}
-  if(!lpRaf)lpRaf=requestAnimationFrame(()=>{lpRaf=0;if(!$('#view-lp').hidden)lpApply();});
+  if(!lpRaf)lpRaf=requestAnimationFrame(()=>{lpRaf=0;if(!$('#view-lp').hidden){lpApply();if($('#lpCalBox').open)lpCalUI();}});
 }
 async function lpStart(){
   try{
@@ -10351,6 +10381,12 @@ async function lpStart(){
   }catch(err){$('#lpStatus').textContent='无法启用指南针（'+(err&&err.message||err)+'），请手动转向。';}
 }
 $('#lpStart').addEventListener('click',lpStart);
+$('#lpCalBox').addEventListener('toggle',lpCalUI);
+$('#lpMode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;lp.mode=+b.dataset.v;lpSaveCal();lpCalc();lpCalUI();lpApply();});
+$('#lpCalBox').addEventListener('click',e=>{const b=e.target.closest('[data-off]');if(!b)return;const v=b.dataset.off;lp.off=v==='reset'?0:((lp.off+ +v+540)%360)-180;if(v==='reset'){lp.mode=1;}lpSaveCal();lpCalc();lpCalUI();lpApply();});
+$('#lpRefGo').addEventListener('click',()=>{const ref=parseFloat($('#lpRef').value);if(isNaN(ref)){return;}
+  if(lp.raw===null){$('#lpRaw').textContent='请先点「启用指南针」，再校正。';return;}
+  const base=lp.raw+lp.mode*lp.so;lp.off=Math.round((((ref-base)%360)+540)%360-180);lpSaveCal();lpCalc();lpCalUI();lpApply();});
 $('#lpSlider').addEventListener('input',e=>{lp.heading=+e.target.value;lp.sel=null;lpApply();});
 // 拖动转盘
 (function(){let drag=null;const st=$('#lpStage');

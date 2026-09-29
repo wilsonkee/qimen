@@ -114,6 +114,17 @@ select,input[type="number"]{font:inherit;font-variant-numeric:tabular-nums;backg
 .gong .r{display:flex;align-items:center;justify-content:flex-end;gap:2px}
 .tok{border:0;background:transparent;padding:1px 3px;border-radius:5px;cursor:pointer;line-height:1.15;white-space:nowrap}
 .tok:hover{background:var(--line2)}
+.fullpick{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;margin:0 0 10px;font-size:14px;cursor:pointer}
+.fullpick input{width:18px;height:18px;align-self:center;accent-color:var(--accent)}
+.fullpick span{font-size:12px;color:var(--ink3)}
+.grid9.full .gong:not(.center){cursor:pointer}
+.grid9.full .gong:not(.center):hover{background:var(--accent-soft)}
+.gong.picked{outline:3px solid var(--accent);outline-offset:-3px;z-index:1}
+.fx-sec{border-top:1px dashed var(--line);padding:10px 0 2px;margin-top:10px}
+.fx-sec h4{margin:0 0 6px;font-family:var(--serif);font-size:15px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.fx-sec p{margin:6px 0}
+.fx-sum{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:14px}
+.fx-sum li{margin:3px 0}
 .tok.sel{background:var(--accent-soft);color:var(--accent)}
 .tok.god{font-size:clamp(11px,1.6vw,13px);color:var(--ink2)}
 .tok.star{font-family:var(--serif);font-weight:700;font-size:clamp(13px,2.1vw,18px)}
@@ -399,6 +410,7 @@ table.ju tr.cur td{background:var(--brass-soft);color:var(--brass);font-weight:7
             <div class="meta" id="meta"></div>
           </div>
         </div>
+        <label class="fullpick"><input type="checkbox" id="fullMode"> <b>整宫释义</b><span>勾选后点九宫格任一格，释义会把这一宫的神、星、门、干、格局全部讲一遍</span></label>
         <div class="compass">
           <div class="dir n">南</div>
           <div class="dir w" style="grid-row:2;grid-column:1">东</div>
@@ -577,9 +589,9 @@ table.ju tr.cur td{background:var(--brass-soft);color:var(--brass);font-weight:7
   </section>
 </div>
 
-<script src="lunar.js?v=342c7fa0"></script>
-<script src="engine.js?v=342c7fa0"></script>
-<script src="app.js?v=342c7fa0"></script>
+<script src="lunar.js?v=03e795d3"></script>
+<script src="engine.js?v=03e795d3"></script>
+<script src="app.js?v=03e795d3"></script>
 
 <script>if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){});}</script>
 </body>

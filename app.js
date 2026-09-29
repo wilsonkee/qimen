@@ -73,7 +73,7 @@ function render(){
       return `<div class="gong center" data-p="5">${wm}<button class="tok gname" data-kind="gong" data-key="5">中五宫</button>${tok('gan',g.di,'gan di',g.di,5)}<span class="note">地盘干寄坤二<br>天禽随天芮</span></div>`;
     }
     const badges=(r.marks[p]||[]).map(x=>`<span class="b ${x==='命'?'ming':'yong'}">${x}</span>`).join('')+(g.kong?'<span class="b kong">空</span>':'')+(g.ma?'<span class="b ma">马</span>':'');
-    const cls=['gong'];if(r.zhiFuPal===p)cls.push('fu');if(r.zhiShiPal===p)cls.push('shi');
+    const cls=['gong'];if(state.sel&&state.sel.kind==='full'&&+state.sel.p===p)cls.push('picked');if(r.zhiFuPal===p)cls.push('fu');if(r.zhiShiPal===p)cls.push('shi');
     return `<div class="${cls.join(' ')}" data-p="${p}">${wm}
       <div class="top">${tok('god',g.god,'god',g.god,p)}<span class="badges">${badges}<button class="tok gname" data-kind="gong" data-key="${p}">${g.gua}${NUMCN[p-1]}</button></span></div>
       <div class="l">${tok('star',g.star,'star',g.star,p)}${g.qin?tok('star','天禽','qin','禽',p):''}</div>
@@ -82,6 +82,7 @@ function render(){
       <div class="r">${tok('gan',g.di,'gan di',g.di,p)}</div>
     </div>`;
   }).join('');
+  $('#grid9').classList.toggle('full',!!state.full);
   $('#steps').innerHTML=r.steps.map(s=>`<li><div><b>${esc(s.t.replace(/^\d+\.\s*/,''))}</b><span>${esc(s.d)}</span></div></li>`).join('');
   const pf=state.patf||'all';const useP=Object.keys(r.marks||{}).map(Number);
   const pOK=x=>{if(pf==='all')return true;if(pf==='ji')return /吉/.test(x.level)&&!/凶/.test(x.level);if(pf==='xiong')return /凶/.test(x.level)&&!/吉/.test(x.level);
@@ -98,10 +99,62 @@ function palaceLine(p){
   const g=state.res.palaces[p];
   return `${g.gua}${NUMCN[p-1]}宫（${g.dir}，${g.wx}）`;
 }
+const ZWX={子:'水',亥:'水',寅:'木',卯:'木',巳:'火',午:'火',申:'金',酉:'金',辰:'土',戌:'土',丑:'土',未:'土'};
+const WS={木:'火',火:'土',土:'金',金:'水',水:'木'},WK={木:'土',土:'水',水:'火',火:'金',金:'木'};
+const starWS=(e,m)=>e===m?'相':WS[e]===m?'旺':WK[e]===m?'休':WK[m]===e?'囚':'废';
+const doorWS=(e,m)=>e===m?'旺':WS[m]===e?'相':WS[e]===m?'休':WK[e]===m?'囚':'死';
+function rel(a,b,an,bn){if(a===b)return `${an}与${bn}比和（同属${a}）`;if(WS[a]===b)return `${an}（${a}）生${bn}（${b}）`;if(WS[b]===a)return `${bn}（${b}）生${an}（${a}）`;
+  if(WK[a]===b)return `${an}（${a}）克${bn}（${b}）`;return `${bn}（${b}）克${an}（${a}）`;}
+const wsChip=v=>`<span class="chip ${/旺|相/.test(v)?'ji':/囚|死/.test(v)?'xiong':''}">${v}</span>`;
+function renderFull(k){
+  const r=state.res,g=r.palaces[k],gi=GUA_INFO[k],mz=r.gz.month[1],mw=ZWX[mz];
+  const si=INFO.star[g.star],di=INFO.door[g.door],god=INFO.god[g.god];
+  const sws=starWS(si[1],mw),dws=doorWS(di[1],mw);
+  const dst=QM.doorState(g.door,k);
+  const marks=(r.marks[k]||[]);
+  const tians=[g.tian,g.tianExtra].filter(Boolean);
+  const pats=r.patterns.filter(x=>x.where.startsWith(g.gua));
+  const glob=r.patterns.filter(x=>x.where==='全盘');
+  const sec=(t,b)=>`<div class="fx-sec"><h4>${t}</h4>${b}</div>`;
+  const tags=[];
+  if(r.zhiFuPal===k)tags.push('<span class="chip brass">值符落此</span>');if(r.zhiShiPal===k)tags.push('<span class="chip acc">值使落此</span>');
+  marks.forEach(x=>tags.push(`<span class="chip acc">${x==='命'?'年命':x+'干'}</span>`));
+  if(g.kong)tags.push('<span class="chip xiong">空亡</span>');if(g.ma)tags.push('<span class="chip">驿马</span>');
+  let h=`<div class="ex-title"><b>${g.gua}${NUMCN[k-1]}宫 · 整宫释义</b><span class="chip">${g.dir}</span><span class="chip">五行 ${g.wx}</span>${tags.join('')}</div>`;
+  // 一句话概览
+  const sum=[];
+  sum.push(`神：<b>${g.god}</b>；星：<b>${g.star}</b>${g.qin?'（带天禽）':''}，${sws}；门：<b>${g.door}</b>，${dws}${dst.length?'，'+dst.join('、'):''}；干：天盘<b>${tians.join('、')}</b>加地盘<b>${g.di}</b>。`);
+  if(marks.length)sum.push(`用神：${marks.map(x=>x==='命'?'年命干':x+'干').join('、')}落在这一宫，这一宫就是在看“${marks.map(x=>({年:'长辈、上级、大环境',月:'兄弟、同事、中期',日:'求测者本人',时:'所问之事',命:'求测者本命'})[x]).join('；')}”。`);
+  if(pats.length)sum.push(`本宫格局：${pats.map(x=>`${x.name}（${x.level}）`).join('、')}。`);
+  if(g.kong)sum.push('本宫空亡：好坏都打折扣，事情多虚而不实，待出空（填实）时才应。');
+  h+=`<div class="fx-sum"><ul>${sum.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+  h+=sec(`① 宫：${gi[0]}${NUMCN[k-1]}宫 <span class="chip">${gi[1]} ${gi[2]}</span>`,`<p>${gi[4]}</p>`);
+  h+=sec(`② 八神：${g.god}`,`<p>${god[0]}</p>`);
+  h+=sec(`③ 九星：${g.star} ${levelChip(si[2])}${wsChip(sws)}`,`<p>${si[3]}</p><p>${si[4]}</p>
+    <p><b>旺衰</b>：${g.star}属${si[1]}，月令${mz}属${mw}，为「${sws}」。${/旺|相/.test(sws)?'星有力，吉星更吉、凶星更凶。':'星力弱，吉星吉减、凶星凶减。'}</p>
+    <p><b>星与宫</b>：${rel(si[1],g.wx,'星','宫')}。</p>
+    ${g.qin?`<p><b>天禽</b>：${INFO.star['天禽'][3]} 转盘中天禽随天芮同行。</p>`:''}`);
+  const home={1:'休',2:'死',3:'伤',4:'杜',6:'开',7:'惊',8:'生',9:'景'}[k];const d1=g.door[0];
+  const ky=[[`${d1}加${home}（落本宫门的宫位）`,BAMEN_DD[d1+home]]];tians.forEach(x=>ky.push([`${d1}加天盘${x}`,BAMEN_DG[d1+x]]));ky.push([`${d1}加地盘${g.di}`,BAMEN_DG[d1+g.di]]);
+  h+=sec(`④ 八门：${g.door} ${levelChip(di[2])}${wsChip(dws)}${dst.map(x=>`<span class="chip ${/迫|墓|制|反吟/.test(x)?'xiong':/义|和/.test(x)?'ji':''}">${x}</span>`).join('')}`,`<p>${di[3]}</p><p>${di[4]}</p>
+    <p><b>旺衰</b>：${g.door}属${di[1]}，月令${mz}属${mw}，为「${dws}」。</p>
+    <p><b>门与宫</b>：${rel(di[1],g.wx,'门','宫')}。${dst.includes('门迫')?'门克宫为<b>门迫</b>：吉门被迫吉事难成，凶门被迫凶上加凶。':''}${dst.includes('受制')?'宫克门为<b>受制</b>：门的作用被压住。':''}${dst.includes('入墓')?'门落墓宫为<b>入墓</b>：门力受困。':''}${dst.some(x=>/义/.test(x))?'宫生门为<b>义</b>，门得助。':''}${dst.some(x=>/^和/.test(x))?'门生宫为<b>和</b>，吉门更顺。':''}</p>
+    <div class="ky"><div class="note-s" style="margin-bottom:4px">八门克应</div>${ky.filter(x=>x[1]).map(([a,b])=>`<div><b>${a}</b>：${b}</div>`).join('')}</div>`);
+  const ganP=x=>{const i=INFO.gan[x];return `<p><b>${x}</b>（${i[0]}，${i[1]}）：${i[2]}</p>`;};
+  h+=sec(`⑤ 天盘干：${tians.join('、')}`,tians.map(ganP).join('')+(g.tianExtra?`<p>这一宫有两个天盘干：天禽随天芮落到这里，把中五宫的干（${g.tianExtra}）也带来了。</p>`:''));
+  h+=sec(`⑥ 地盘干：${g.di}`,ganP(g.di)+'<p>地盘干是“本来就在这里”的，代表静、代表主方；天盘干是“转过来的”，代表动、代表客方。</p>');
+  const gk=tians.map(x=>{const v=GANKE[x+g.di];return v?`<div><b>${x}+${g.di} ${v[0]}</b> ${levelChip(v[1])} ${v[2]}</div>`:''}).join('');
+  h+=sec('⑦ 十干克应（天盘干＋地盘干）',`<div class="ky">${gk||'—'}</div><p>${tians.map(x=>rel(QM.GAN_WX?QM.GAN_WX[x]:INFO.gan[x][1],INFO.gan[g.di][1],'天盘'+x,'地盘'+g.di)).join('；')}。天盘克地盘利客，地盘克天盘利主。</p>`);
+  h+=sec(`⑧ 本宫格局（${pats.length}）`,pats.length?pats.map(x=>`<div style="margin:4px 0">${levelChip(x.level)} <b>${esc(x.name)}</b>：${esc(x.desc)}</div>`).join(''):'<p>这一宫没有命中常见格局。</p>'+(glob.length?`<p class="note-s">全盘格局：${glob.map(x=>x.name).join('、')}（影响整盘）。</p>`:''));
+  if(g.kong||g.ma)h+=sec('⑨ 空亡与驿马',`${g.kong?`<p><b>空亡</b>：本宫地支落在旬空（${r.kong.join('')}）。空则虚、则不实；吉事难成，凶事也减轻。出空、冲空之时应事。</p>`:''}${g.ma?`<p><b>驿马</b>（${r.ma}）：主动、变动、出行、快速。用神临马，事情动得快。</p>`:''}`);
+  h+=`<p style="margin:10px 0 0"><button class="kblink" data-kb="断盘步骤">在知识库看「断盘步骤」→</button></p>`;
+  return h;
+}
 function renderExplain(){
   const r=state.res, s=state.sel, el=$('#explain');
+  if(s&&s.kind==='full'){el.innerHTML=`<h2>释义 <button class="btn" id="exclear" style="padding:2px 10px;font-size:12px">返回概览</button></h2>${renderFull(+s.p)}`;return;}
   if(!s){
-    el.innerHTML=`<h2>释义 <span class="sub">点盘上任一符号</span></h2>
+    el.innerHTML=`<h2>释义 <span class="sub">${state.full?'点九宫格任一格':'点盘上任一符号'}</span></h2>
       <div class="ex-body"><p>本盘值符<b>${r.zhiFu}</b>落${palaceLine(r.zhiFuPal)}，值使<b>${r.zhiShi}</b>落${palaceLine(r.zhiShiPal)}。</p>
       <p>每宫分三层：<b>天盘</b>（九星 + 天盘干，右上大字）、<b>人盘</b>（八门）、<b>地盘</b>（右下地盘干），最上面是<b>神盘</b>（八神）。</p>
       <p>读盘先找用神：求财看生门与戊，考试看景门与丁，出行看开门与驿马，求医看天心与乙。</p></div>`;
@@ -150,6 +203,8 @@ function renderExplain(){
 }
 
 document.addEventListener('click',e=>{
+  if(state.full){const gg=e.target.closest('#grid9 .gong');if(gg&&gg.dataset.p!=='5'){state.sel={kind:'full',p:gg.dataset.p};render();
+    if(window.innerWidth<=900)$('#explain').scrollIntoView({behavior:'smooth',block:'start'});return;}}
   const t=e.target.closest('.tok');
   if(t){state.sel={kind:t.dataset.kind,key:t.dataset.key,p:t.dataset.p||(t.dataset.kind==='gong'?t.dataset.key:null)};render();
     if(window.innerWidth<=900)$('#explain').scrollIntoView({behavior:'smooth',block:'start'});return;}
@@ -179,6 +234,10 @@ $('#now').addEventListener('click',()=>{setInput(new Date());compute();});
 function shiftH(n){const d=readInput();d.setHours(d.getHours()+2*n);setInput(d);compute();}
 $('#prevH').addEventListener('click',()=>shiftH(-1));
 $('#nextH').addEventListener('click',()=>shiftH(1));
+try{state.full=localStorage.getItem('qm-full')==='1';}catch(e){}
+$('#fullMode').checked=!!state.full;
+$('#fullMode').addEventListener('change',e=>{state.full=e.target.checked;try{localStorage.setItem('qm-full',state.full?'1':'0')}catch(err){}
+  if(!state.full&&state.sel&&state.sel.kind==='full')state.sel=null;render();});
 $('#patf').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.patf=b.dataset.f;try{localStorage.setItem('qm-patf',state.patf)}catch(err){}render();});
 try{const f=localStorage.getItem('qm-patf');if(['all','ji','xiong','use'].includes(f))state.patf=f;}catch(e){}
 $('#method').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.method=b.dataset.m;

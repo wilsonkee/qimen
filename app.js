@@ -5,13 +5,55 @@ if(!window.QM||!window.Solar){document.querySelector('.wrap').insertAdjacentHTML
 
 // ---------- 释义 ----------
 let D;
-try{D=Object.fromEntries(await Promise.all(['symbols','kb','ganke','bamen','cases'].map(async n=>{const r=await fetch(n+'.json',{cache:'no-cache'});if(!r.ok)throw new Error(n+'.json '+r.status);return [n,await r.json()];})));}
+try{D=Object.fromEntries(await Promise.all(['symbols','kb','ganke','bamen','cases','scene'].map(async n=>{const r=await fetch(n+'.json',{cache:'no-cache'});if(!r.ok)throw new Error(n+'.json '+r.status);return [n,await r.json()];})));}
 catch(err){document.querySelector('.wrap').insertAdjacentHTML('beforeend','<div class="card">资料文件没有加载成功（'+String(err.message||err)+'），请检查网络后刷新页面。</div>');return;}
-const {INFO,GUA_INFO}=D.symbols;const KB_CATS=D.kb.cats,KB=D.kb.articles,GANKE=D.ganke,BAMEN_DD=D.bamen.dd,BAMEN_DG=D.bamen.dg,CASES=D.cases;
+const {INFO,GUA_INFO}=D.symbols;const KB_CATS=D.kb.cats,KB=D.kb.articles,GANKE=D.ganke,BAMEN_DD=D.bamen.dd,BAMEN_DG=D.bamen.dg,CASES=D.cases,SCENE_DICT=D.scene;
 const levelChip=l=>`<span class="chip ${l==='吉'||l==='大吉'?'ji':l==='凶'?'xiong':''}">${esc(l)}</span>`;
 const NUMCN='一二三四五六七八九';
+// ---------- 问事类型（定向断卦） ----------
+// k: 盘上标签；w: 符号或取法；d: 代表什么
+const SCENES=[
+ {id:'illness',n:'疾病',kb:'疾病预测',roles:[{k:'病',w:'天芮',d:'病症、病位'},{k:'人',w:'@日',d:'病人（自问）'},{k:'医',w:'天心',d:'医生'},{k:'药',w:'乙',d:'医药'}]},
+ {id:'marriage',n:'恋爱婚姻',kb:'恋爱婚姻预测',roles:[{k:'女',w:'乙',d:'女方'},{k:'男',w:'庚',d:'男方'},{k:'媒',w:'六合',d:'媒人、婚姻'},{k:'丁',w:'丁',d:'第三者女人、证书'},{k:'丙',w:'丙',d:'第三者男人'}]},
+ {id:'pregnancy',n:'怀孕分娩',kb:'怀孕分娩预测',roles:[{k:'室',w:'#2',d:'产室（坤宫）'},{k:'母',w:'天芮',d:'产母'},{k:'子',w:'@时',d:'胎儿'},{k:'胎',w:'六合',d:'胎儿（另一取法）'}]},
+ {id:'exam',n:'求学考试',kb:'求学考试预测',roles:[{k:'考',w:'@日',d:'考生（自问）'},{k:'院',w:'天辅',d:'考试院'},{k:'主',w:'值符',d:'主考、监考'},{k:'分',w:'丁',d:'文章、成绩'},{k:'卷',w:'景门',d:'试卷'},{k:'校',w:'@年',d:'录取学校'}]},
+ {id:'career',n:'工作就业',kb:'工作就业预测',roles:[{k:'我',w:'@日',d:'求测人'},{k:'职',w:'开门',d:'文职工作、单位'},{k:'武',w:'杜门',d:'武职工作、单位'},{k:'上',w:'值符',d:'顶头上司'},{k:'领',w:'@年',d:'上级领导'},{k:'同',w:'@月',d:'同事'}]},
+ {id:'wealth',n:'经营求财',kb:'经营求财预测',roles:[{k:'我',w:'@日',d:'求测人'},{k:'货',w:'@时',d:'财物、货物'},{k:'本',w:'戊',d:'资本（甲子戊）'},{k:'利',w:'生门',d:'利润、利息'},{k:'店',w:'开门',d:'店铺门面'},{k:'主',w:'值符',d:'货主、银行、债主'},{k:'介',w:'六合',d:'经纪人、中介'}]},
+ {id:'travel',n:'出行出国',kb:'出行出国预测',roles:[{k:'行',w:'@日',d:'出行人'},{k:'机',w:'开门',d:'飞机、出发'},{k:'车',w:'伤门',d:'车、船'},{k:'路',w:'景门',d:'道路'},{k:'水',w:'休门',d:'水路'},{k:'航',w:'九天',d:'航线'}]},
+ {id:'missing_person',n:'行人走失',kb:'行人走失预测',roles:[{k:'人',w:'@日',d:'走失者（按走失时间起局）'},{k:'子',w:'@时',d:'子女（父母来问）'},{k:'始',w:'六合',d:'开始走失的方向'},{k:'落',w:'值符',d:'中途落脚点'},{k:'藏',w:'杜门',d:'有意躲藏的方向'}]},
+ {id:'lost_item',n:'钱物丢失',kb:'钱物丢失预测',roles:[{k:'主',w:'@日',d:'失主'},{k:'物',w:'@时',d:'失物'},{k:'盗',w:'玄武',d:'小偷、自己忘记'},{k:'贼',w:'天蓬',d:'盗星'},{k:'证',w:'景门',d:'证件、文书'},{k:'钱',w:'戊',d:'钱'},{k:'捕',w:'白虎',d:'捕盗者'}]},
+ {id:'crime',n:'刑事案件',kb:'刑事案件预测',roles:[{k:'玄',w:'玄武',d:'小偷、轻微犯罪'},{k:'蓬',w:'天蓬',d:'抢劫杀人、重案'},{k:'罪',w:'辛',d:'罪人'},{k:'警',w:'伤门',d:'公安捕盗'},{k:'捕',w:'白虎',d:'捕盗之人'},{k:'逃',w:'六合',d:'逃犯'},{k:'藏',w:'杜门',d:'藏匿方向'}]},
+ {id:'lawsuit',n:'官司诉讼',kb:'官司诉讼预测',roles:[{k:'原',w:'值符',d:'原告'},{k:'被',w:'@天乙',d:'被告（天乙：值符落宫原有之星）'},{k:'法',w:'开门',d:'法官'},{k:'证',w:'六合',d:'证人、证据'},{k:'状',w:'景门',d:'诉状'},{k:'票',w:'丁',d:'传票'},{k:'律',w:'惊门',d:'律师'},{k:'罪',w:'辛',d:'罪人'}]},
+ {id:'sports',n:'体育竞赛',kb:'体育竞赛预测',roles:[{k:'裁',w:'值符',d:'裁判'},{k:'主',w:'@地时',d:'主队（地盘时干）'},{k:'客',w:'@时',d:'客队（天盘时干）'},{k:'球',w:'庚',d:'比赛器械、球'},{k:'金',w:'辛',d:'金牌'},{k:'教',w:'景门',d:'技术指导、教练'}]},
+ {id:'military',n:'军事对抗',kb:'军事与对抗预测',roles:[{k:'主',w:'值符',d:'主方、守方'},{k:'客',w:'庚',d:'客方、攻方'},{k:'情',w:'景门',d:'情报、破阵'},{k:'惊',w:'惊门',d:'治乱'},{k:'官',w:'开门',d:'主官'}]},
+ {id:'weather',n:'天时气象',kb:'天时气象预测',roles:[{k:'晴',w:'天英',d:'火神，主晴'},{k:'风',w:'天辅',d:'风伯，主风'},{k:'雨',w:'天柱',d:'雨师，主雨'},{k:'水',w:'天蓬',d:'水神'},{k:'雷',w:'天冲',d:'雷公'}]},
+ {id:'geography',n:'地理住宅',kb:'地理环境（住宅、墓地）预测',roles:[{k:'人',w:'@日',d:'人'},{k:'宅',w:'@时',d:'住宅'},{k:'房',w:'生门',d:'房屋'},{k:'地',w:'死门',d:'地皮、宅基、阴宅'},{k:'新',w:'值符',d:'新宅'}]},
+ {id:'life',n:'人生机遇',kb:'人生机遇预测',roles:[{k:'我',w:'@日',d:'本人'},{k:'年',w:'@年',d:'父母、上级'},{k:'月',w:'@月',d:'兄弟、同事'},{k:'子',w:'@时',d:'子女、下属'},{k:'产',w:'生门',d:'产业'}]},
+ {id:'misc',n:'其他杂项',kb:'杂项：灵活取用',roles:[{k:'首',w:'值符',d:'首领、决策者'},{k:'开',w:'开门',d:'会议、建楼办厂'},{k:'丁',w:'丁',d:'文件、选票'},{k:'震',w:'天冲',d:'震动、爆炸'},{k:'死',w:'死门',d:'死者'}]}
+];
+const symType=w=>/门$/.test(w)?'door':/^天/.test(w)?'star':/^(值符|螣蛇|太阴|六合|白虎|玄武|九地|九天)$/.test(w)?'god':'stem';
+function sceneKw(type,sym){const sc=state.scene;if(!sc||!SCENE_DICT[type]||!SCENE_DICT[type][sym])return [];return SCENE_DICT[type][sym][sc]||[];}
+const kwChips=a=>a.map(x=>`<span class="chip kw">${esc(x)}</span>`).join('');
+// 找出一个用神所在的宫（返回宫号数组）与说明
+function findRole(r,w){
+  const P=[1,2,3,4,6,7,8,9],out=[];
+  const byTian=g=>P.filter(q=>r.palaces[q].tian===g||r.palaces[q].tianExtra===g);
+  if(w[0]==='#')return {ps:[+w.slice(1)],sym:QM.GONG[+w.slice(1)]+'宫'};
+  if(w[0]==='@'){const x=w.slice(1);
+    if(x==='天乙'){const s0=QM.STAR[r.zhiFuPal];const ps=P.filter(q=>r.palaces[q].star===s0||(s0==='天禽'&&r.palaces[q].qin));return {ps,sym:s0,type:'star'};}
+    if(x==='地时'){const g=QM.ganOf(r.gz.hour);return {ps:P.filter(q=>r.palaces[q].di===g),sym:'地盘'+g,type:'stem',g};}
+    const gz={年:r.gz.year,月:r.gz.month,日:r.gz.day,时:r.gz.hour}[x];const g=QM.ganOf(gz);return {ps:byTian(g),sym:x+'干'+g+(gz[0]==='甲'?`（${gz}）`:''),type:'stem',g};}
+  const t=symType(w);
+  if(t==='stem')return {ps:byTian(w),sym:w,type:t};
+  if(t==='star')return {ps:P.filter(q=>r.palaces[q].star===w||(w==='天禽'&&r.palaces[q].qin)),sym:w,type:t};
+  if(t==='door')return {ps:P.filter(q=>r.palaces[q].door===w),sym:w,type:t};
+  return {ps:P.filter(q=>r.palaces[q].god===w),sym:w,type:t};
+}
+function sceneMarks(r){const sc=SCENES.find(x=>x.id===state.scene);const m={};if(!sc)return m;
+  sc.roles.forEach(ro=>{findRole(r,ro.w).ps.forEach(q=>{(m[q]=m[q]||[]).push(ro);});});return m;}
 
-let state={dt:null,method:'chaibu',res:null,sel:null,birth:null,tst:false,city:'101.69,8',lon:101.69,tz:-new Date().getTimezoneOffset()/60};
+
+let state={scene:'',dt:null,method:'chaibu',res:null,sel:null,birth:null,tst:false,city:'101.69,8',lon:101.69,tz:-new Date().getTimezoneOffset()/60};
 try{const m=localStorage.getItem('qm-method');if(m==='zhirun'||m==='chaibu')state.method=m;
   const s=JSON.parse(localStorage.getItem('qm-solar')||'null');if(s){state.tst=!!s.tst;state.city=s.city;state.lon=+s.lon;state.tz=+s.tz;}}catch(e){}
 try{const b=+localStorage.getItem('qm-birth');if(b>=1900&&b<=2100)state.birth=b;}catch(e){}
@@ -64,7 +106,7 @@ function render(){
   if(state.birth){const bgz=QM.GZ[((state.birth-4)%60+60)%60];addMark(QM.ganOf(bgz),'命');
     const bp=Object.keys(marks).find(q=>marks[q].includes('命'));
     $('#birthOut').innerHTML=`年命 <b>${bgz}</b>（${bgz[0]==='甲'?'甲遁于'+QM.ganOf(bgz)+'，':''}天盘${QM.ganOf(bgz)}）落 ${bp?r.palaces[bp].gua+NUMCN[bp-1]+'宫':'—'}。立春前出生的请填前一年。`;}
-  r.marks=marks;
+  r.marks=marks;r.smarks=sceneMarks(r);
   const order=[4,9,2,3,5,7,8,1,6];
   $('#grid9').innerHTML=order.map(p=>{
     const g=r.palaces[p];
@@ -72,8 +114,8 @@ function render(){
     if(p===5){
       return `<div class="gong center" data-p="5">${wm}<button class="tok gname" data-kind="gong" data-key="5">中五宫</button>${tok('gan',g.di,'gan di',g.di,5)}<span class="note">地盘干寄坤二<br>天禽随天芮</span></div>`;
     }
-    const badges=(r.marks[p]||[]).map(x=>`<span class="b ${x==='命'?'ming':'yong'}">${x}</span>`).join('')+(g.kong?'<span class="b kong">空</span>':'')+(g.ma?'<span class="b ma">马</span>':'');
-    const cls=['gong'];if(state.sel&&state.sel.kind==='full'&&+state.sel.p===p)cls.push('picked');if(r.zhiFuPal===p)cls.push('fu');if(r.zhiShiPal===p)cls.push('shi');
+    const badges=(state.scene?(r.smarks[p]||[]).map(x=>`<span class="b sc" title="${x.d}">${x.k}</span>`).join('')+(r.marks[p]||[]).filter(x=>x==='命').map(x=>'<span class="b ming">命</span>').join(''):(r.marks[p]||[]).map(x=>`<span class="b ${x==='命'?'ming':'yong'}">${x}</span>`).join(''))+(g.kong?'<span class="b kong">空</span>':'')+(g.ma?'<span class="b ma">马</span>':'');
+    const cls=['gong'];if(state.sel&&state.sel.kind==='full'&&+state.sel.p===p)cls.push('picked');if(r.zhiFuPal===p)cls.push('fu');if(r.zhiShiPal===p)cls.push('shi');if(state.scene&&r.smarks[p])cls.push('scp');
     return `<div class="${cls.join(' ')}" data-p="${p}">${wm}
       <div class="top">${tok('god',g.god,'god',g.god,p)}<span class="badges">${badges}<button class="tok gname" data-kind="gong" data-key="${p}">${g.gua}${NUMCN[p-1]}</button></span></div>
       <div class="l">${tok('star',g.star,'star',g.star,p)}${g.qin?tok('star','天禽','qin','禽',p):''}</div>
@@ -84,8 +126,9 @@ function render(){
   }).join('');
   $('#grid9').classList.toggle('full',!!state.full);
   $('#explain').classList.toggle('nostick',!!state.full);
+  renderScene();
   $('#steps').innerHTML=r.steps.map(s=>`<li><div><b>${esc(s.t.replace(/^\d+\.\s*/,''))}</b><span>${esc(s.d)}</span></div></li>`).join('');
-  const pf=state.patf||'all';const useP=Object.keys(r.marks||{}).map(Number);
+  const pf=state.patf||'all';const useP=Object.keys(state.scene?r.smarks:(r.marks||{})).map(Number);
   const pOK=x=>{if(pf==='all')return true;if(pf==='ji')return /吉/.test(x.level)&&!/凶/.test(x.level);if(pf==='xiong')return /凶/.test(x.level)&&!/吉/.test(x.level);
     const m=x.where.match(/(\d)宫/);return m?useP.includes(+m[1]):false;};
   const pats=r.patterns.map((x,i)=>[x,i]).filter(([x])=>pOK(x));
@@ -129,6 +172,13 @@ function renderFull(k){
   if(pats.length)sum.push(`本宫格局：${pats.map(x=>`${x.name}（${x.level}）`).join('、')}。`);
   if(g.kong)sum.push('本宫空亡：好坏都打折扣，事情多虚而不实，待出空（填实）时才应。');
   h+=`<div class="fx-sum"><ul>${sum.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+  const sc=SCENES.find(x=>x.id===state.scene);
+  if(sc){const L=[['宫',g.gua+'宫','palace',g.gua],['神',g.god,'god',g.god],['星',g.star,'star',g.star],['门',g.door,'door',g.door]];
+    tians.forEach(x=>L.push(['天盘干',x,'stem',x]));L.push(['地盘干',g.di,'stem',g.di]);
+    const here=(r.smarks[k]||[]);
+    h+=`<div class="fx-sec fx-scene"><h4>⓪ 本类取象 · ${sc.n}</h4>${here.length?`<p><b>本宫用神</b>：${here.map(x=>`<span class="b sc">${x.k}</span> ${esc(x.d)}`).join('；')}</p>`:'<p class="muted">这一宫没有本类的主要用神。</p>'}
+    <dl class="kv">${L.map(([a,b,t,sy])=>{const kw=sceneKw(t,sy);return `<dt>${a}·${b}</dt><dd>${kw.length?kwChips(kw):'<span class="muted">—</span>'}</dd>`}).join('')}</dl>
+    <p class="note-s">关键词取自书中这一类的取用经验和实例；“—”表示书里没有写到。</p></div>`;}
   h+=sec(`① 宫：${gi[0]}${NUMCN[k-1]}宫 <span class="chip">${gi[1]} ${gi[2]}</span>`,`<p>${gi[4]}</p>`);
   h+=sec(`② 八神：${g.god}`,`<p>${god[0]}</p>`);
   h+=sec(`③ 九星：${g.star} ${levelChip(si[2])}${wsChip(sws)}`,`<p>${si[3]}</p><p>${si[4]}</p>
@@ -150,6 +200,20 @@ function renderFull(k){
   if(g.kong||g.ma)h+=sec('⑨ 空亡与驿马',`${g.kong?`<p><b>空亡</b>：本宫地支落在旬空（${r.kong.join('')}）。空则虚、则不实；吉事难成，凶事也减轻。出空、冲空之时应事。</p>`:''}${g.ma?`<p><b>驿马</b>（${r.ma}）：主动、变动、出行、快速。用神临马，事情动得快。</p>`:''}`);
   h+=`<p style="margin:10px 0 0"><button class="kblink" data-kb="断盘步骤">在知识库看「断盘步骤」→</button></p>`;
   return h;
+}
+
+function renderScene(){
+  const el=$('#scenePanel');const sc=SCENES.find(x=>x.id===state.scene);
+  document.querySelectorAll('#scene').forEach(x=>x.value=state.scene||'');
+  if(!sc){el.hidden=true;el.innerHTML='';return;}
+  const r=state.res;el.hidden=false;
+  const rows=sc.roles.map(ro=>{const f=findRole(r,ro.w);
+    const where=f.ps.length?f.ps.map(q=>{const g=r.palaces[q];return `<button class="kblink" data-fullp="${q}">${g.gua}${NUMCN[q-1]}宫</button>${g.kong?'<span class="chip xiong">空</span>':''}`}).join(' '):'<span class="muted">盘上不见（寄中五或未出现）</span>';
+    const kw=(f.type&&ro.w[0]!=='@')||ro.w==='@天乙'?sceneKw(f.type,f.sym):[];
+    return `<tr><td><span class="b sc">${ro.k}</span></td><td><b>${esc(f.sym)}</b><div class="muted" style="font-size:12px">${esc(ro.d)}</div></td><td>${where}</td><td>${kwChips(kw)}</td></tr>`;}).join('');
+  el.innerHTML=`<h2>定向断卦 · ${sc.n} <span class="sub">盘上标签就是这些用神</span></h2>
+    <div class="kbt-wrap"><table class="kbt sc-tbl"><thead><tr><th></th><th>用神</th><th>落宫</th><th>本类取象</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note-s">点落宫可看整宫释义（其中有“本类取象”）。取用规则和实例：<button class="kblink" data-kb="${sc.kb}">知识库「${sc.kb}」→</button></p>`;
 }
 function renderExplain(){
   const r=state.res, s=state.sel, el=$('#explain');
@@ -198,6 +262,8 @@ function renderExplain(){
     const ky=[g.tian,g.tianExtra].filter(Boolean).map(x=>{const v=GANKE[x+g.di];return v?`<div><b>${x}+${g.di} ${v[0]}</b> ${levelChip(v[1])} ${v[2]}</div>`:''}).join('');
     if(ky)h+=`<div class="ky"><div class="note-s" style="margin-bottom:4px">本宫十干克应（天盘+地盘）</div>${ky}</div>`;
   }
+  {const sc=SCENES.find(x=>x.id===state.scene);if(sc){const t={star:'star',door:'door',god:'god',gan:'stem',gong:'palace'}[s.kind];const sy=s.kind==='gong'?QM.GONG[+s.key]:s.key;const kw=t?sceneKw(t,sy):[];
+    h+=`<div class="ky"><div class="note-s" style="margin-bottom:4px">本类取象 · ${sc.n}</div>${kw.length?kwChips(kw):'<span class="muted">书中这一类没有写到这个符号。</span>'}</div>`;}}
   const KBT={star:'九星',door:'八门',god:'八神',gan:'三奇六仪与遁甲',gong:'九宫详解'}[s.kind];
   if(KBT)h+=`<p style="margin:10px 0 0"><button class="kblink" data-kb="${KBT}">在知识库看「${KBT}」详解 →</button></p>`;
   el.innerHTML=`<h2>释义 <button class="btn" id="exclear" style="padding:2px 10px;font-size:12px">返回概览</button></h2>${h}`;
@@ -206,6 +272,7 @@ function renderExplain(){
 document.addEventListener('click',e=>{
   if(state.full){const gg=e.target.closest('#grid9 .gong');if(gg&&gg.dataset.p!=='5'){state.sel={kind:'full',p:gg.dataset.p};render();
     if(window.innerWidth<=900)$('#explain').scrollIntoView({behavior:'smooth',block:'start'});return;}}
+  const fp=e.target.closest('[data-fullp]');if(fp){state.sel={kind:'full',p:fp.dataset.fullp};render();$('#explain').scrollIntoView({behavior:'smooth',block:'start'});return;}
   const t=e.target.closest('.tok');
   if(t){state.sel={kind:t.dataset.kind,key:t.dataset.key,p:t.dataset.p||(t.dataset.kind==='gong'?t.dataset.key:null)};render();
     if(window.innerWidth<=900)$('#explain').scrollIntoView({behavior:'smooth',block:'start'});return;}
@@ -239,6 +306,9 @@ try{state.full=localStorage.getItem('qm-full')==='1';}catch(e){}
 $('#fullMode').checked=!!state.full;
 $('#fullMode').addEventListener('change',e=>{state.full=e.target.checked;try{localStorage.setItem('qm-full',state.full?'1':'0')}catch(err){}
   if(!state.full&&state.sel&&state.sel.kind==='full')state.sel=null;render();});
+try{const v=localStorage.getItem('qm-scene');if(SCENES.some(x=>x.id===v))state.scene=v;}catch(e){}
+$('#scene').innerHTML='<option value="">不指定（一般看盘）</option>'+SCENES.map(x=>`<option value="${x.id}">${x.n}</option>`).join('');
+$('#scene').addEventListener('change',e=>{state.scene=e.target.value;try{localStorage.setItem('qm-scene',state.scene)}catch(err){}render();});
 $('#patf').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.patf=b.dataset.f;try{localStorage.setItem('qm-patf',state.patf)}catch(err){}render();});
 try{const f=localStorage.getItem('qm-patf');if(['all','ji','xiong','use'].includes(f))state.patf=f;}catch(e){}
 $('#method').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.method=b.dataset.m;

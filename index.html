@@ -114,6 +114,17 @@ select,input[type="number"]{font:inherit;font-variant-numeric:tabular-nums;backg
 .gong .r{display:flex;align-items:center;justify-content:flex-end;gap:2px}
 .tok{border:0;background:transparent;padding:1px 3px;border-radius:5px;cursor:pointer;line-height:1.15;white-space:nowrap}
 .tok:hover{background:var(--line2)}
+.scene-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px}
+.scene-row select{font-size:15px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+.b.sc{background:var(--brass-soft,#f3e6c4);color:var(--brass,#8a6a1f);font-weight:700}
+.gong.scp{background:color-mix(in srgb,var(--paper) 88%,var(--brass,#b08a2e))}
+.chip.kw{background:var(--accent-soft);color:var(--accent);font-size:12px}
+.scene-panel{border-top:1px dashed var(--line);padding-top:10px}
+.scene-panel h2{margin:0 0 8px}
+.sc-tbl td{vertical-align:top}
+.sc-tbl td .chip{margin:0 3px 3px 0;display:inline-block}
+.fx-scene{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.fx-scene dd .chip{margin:0 3px 3px 0;display:inline-block}
 .fullpick{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;margin:0 0 10px;font-size:14px;cursor:pointer}
 .fullpick input{width:18px;height:18px;align-self:center;accent-color:var(--accent)}
 .fullpick span{font-size:12px;color:var(--ink3)}
@@ -411,6 +422,7 @@ table.ju tr.cur td{background:var(--brass-soft);color:var(--brass);font-weight:7
             <div class="meta" id="meta"></div>
           </div>
         </div>
+        <div class="scene-row"><label for="scene"><b>问事类型</b></label><select id="scene"></select><span class="note-s">选了以后，盘上标出这一类的用神，释义会显示本类取象</span></div>
         <label class="fullpick"><input type="checkbox" id="fullMode"> <b>整宫释义</b><span>勾选后点九宫格任一格，释义会把这一宫的神、星、门、干、格局全部讲一遍</span></label>
         <div class="compass">
           <div class="dir n">南</div>
@@ -431,6 +443,7 @@ table.ju tr.cur td{background:var(--brass-soft);color:var(--brass);font-weight:7
             <span>上南下北，左东右西</span>
           </div>
         </div>
+        <div class="scene-panel" id="scenePanel" hidden></div>
         <p class="note-s" style="margin:0">点任一符号（星、门、神、干）或宫名查看释义。打开「真太阳时校正」后，日柱与时柱按当地真太阳时起，节气按实际交节时刻判断。</p>
       </div>
 
@@ -590,9 +603,9 @@ table.ju tr.cur td{background:var(--brass-soft);color:var(--brass);font-weight:7
   </section>
 </div>
 
-<script src="lunar.js?v=80231b4e"></script>
-<script src="engine.js?v=80231b4e"></script>
-<script src="app.js?v=80231b4e"></script>
+<script src="lunar.js?v=3f268579"></script>
+<script src="engine.js?v=3f268579"></script>
+<script src="app.js?v=3f268579"></script>
 
 <script>if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){});}</script>
 </body>

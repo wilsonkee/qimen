@@ -1,6 +1,6 @@
 // 离线缓存：有网时先取最新版，没网时用缓存
-const CACHE = 'qimen-03e795d3';
-const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "app.js?v=03e795d3", "engine.js?v=03e795d3", "lunar.js?v=03e795d3", "bamen.json", "cases.json", "ganke.json", "kb.json", "symbols.json"];
+const CACHE = 'qimen-80231b4e';
+const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "app.js?v=80231b4e", "engine.js?v=80231b4e", "lunar.js?v=80231b4e", "bamen.json", "cases.json", "ganke.json", "kb.json", "symbols.json"];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

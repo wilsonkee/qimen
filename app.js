@@ -83,6 +83,7 @@ function render(){
     </div>`;
   }).join('');
   $('#grid9').classList.toggle('full',!!state.full);
+  $('#explain').classList.toggle('nostick',!!state.full);
   $('#steps').innerHTML=r.steps.map(s=>`<li><div><b>${esc(s.t.replace(/^\d+\.\s*/,''))}</b><span>${esc(s.d)}</span></div></li>`).join('');
   const pf=state.patf||'all';const useP=Object.keys(r.marks||{}).map(Number);
   const pOK=x=>{if(pf==='all')return true;if(pf==='ji')return /吉/.test(x.level)&&!/凶/.test(x.level);if(pf==='xiong')return /凶/.test(x.level)&&!/吉/.test(x.level);

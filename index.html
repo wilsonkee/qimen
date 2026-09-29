@@ -152,6 +152,7 @@ select,input[type="number"]{font:inherit;font-variant-numeric:tabular-nums;backg
 .card h2{font-family:var(--serif);font-size:16px;font-weight:700;margin:0 0 10px;letter-spacing:.06em;display:flex;align-items:center;gap:8px;justify-content:space-between}
 .card h2 .sub{font-family:var(--sans);font-size:12px;font-weight:400;color:var(--ink3);letter-spacing:0}
 #explain{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+#explain.nostick{position:static}
 @media (max-width:900px){#explain{position:static}}
 .ex-title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .ex-title b{font-family:var(--serif);font-size:24px;font-weight:900}
@@ -589,9 +590,9 @@ table.ju tr.cur td{background:var(--brass-soft);color:var(--brass);font-weight:7
   </section>
 </div>
 
-<script src="lunar.js?v=03e795d3"></script>
-<script src="engine.js?v=03e795d3"></script>
-<script src="app.js?v=03e795d3"></script>
+<script src="lunar.js?v=80231b4e"></script>
+<script src="engine.js?v=80231b4e"></script>
+<script src="app.js?v=80231b4e"></script>
 
 <script>if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){});}</script>
 </body>

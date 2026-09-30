@@ -119,6 +119,13 @@ select,input[type="number"]{font:inherit;font-variant-numeric:tabular-nums;backg
 .b.sc{background:var(--brass-soft,#f3e6c4);color:var(--brass,#8a6a1f);font-weight:700}
 .gong.scp{background:color-mix(in srgb,var(--paper) 88%,var(--brass,#b08a2e))}
 .chip.kw{background:var(--accent-soft);color:var(--accent);font-size:12px}
+.guide{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--bg)}
+.guide summary{font-size:14px}
+.guide-steps{padding-left:1.4em;margin:8px 0}
+.guide-steps>li{margin:8px 0}
+.guide-steps p,.guide-steps ul{margin:4px 0;font-size:13px;color:var(--ink2)}
+.guide-steps ul{padding-left:1.1em}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
 .scene-panel{border-top:1px dashed var(--line);padding-top:10px}
 .scene-panel h2{margin:0 0 8px}
 .sc-tbl td{vertical-align:top}
@@ -386,6 +393,12 @@ table.ju tr.cur td{background:var(--brass-soft);color:var(--brass);font-weight:7
           <button data-m="zhirun" aria-pressed="false">置闰法</button>
         </div>
       </div>
+      <div class="field"><label>交节换局</label>
+        <div class="seg" id="jqrule" title="拆补法下，交节当天从何时起换用新节气的局">
+          <button data-r="shi" aria-pressed="true">按交节时辰</button>
+          <button data-r="moment" aria-pressed="false">按交节时刻</button>
+        </div>
+      </div>
       <div class="field">
         <button class="btn" id="prevH" aria-label="上一个时辰">← 上一时辰</button>
         <button class="btn" id="nextH" aria-label="下一个时辰">下一时辰 →</button>
@@ -546,6 +559,8 @@ table.ju tr.cur td{background:var(--brass-soft);color:var(--brass);font-weight:7
             <button data-l="1" aria-pressed="true">定局</button>
             <button data-l="2" aria-pressed="false">值符值使</button>
             <button data-l="3" aria-pressed="false">布盘</button>
+            <button data-l="4" aria-pressed="false">起局规律</button>
+            <button data-l="5" aria-pressed="false">取用神</button>
             <button data-l="0" aria-pressed="false">混合</button>
           </div>
         </div>
@@ -603,9 +618,9 @@ table.ju tr.cur td{background:var(--brass-soft);color:var(--brass);font-weight:7
   </section>
 </div>
 
-<script src="lunar.js?v=3f268579"></script>
-<script src="engine.js?v=3f268579"></script>
-<script src="app.js?v=3f268579"></script>
+<script src="lunar.js?v=c04f3412"></script>
+<script src="engine.js?v=c04f3412"></script>
+<script src="app.js?v=c04f3412"></script>
 
 <script>if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){});}</script>
 </body>

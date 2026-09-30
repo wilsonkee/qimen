@@ -78,19 +78,19 @@
   const msOf = str => { const [a, b] = str.split(' '); const [y, m, d] = a.split('-').map(Number); const [h, mi, se] = b.split(':').map(Number); return Date.UTC(y, m - 1, d, h, mi, se); };
   function shiStartMs(ms) { const t = new Date(ms); const h = t.getUTCHours(); const back = (h % 2 === 1 ? 0 : 3600e3) + t.getUTCMinutes() * 60e3 + t.getUTCSeconds() * 1e3 + t.getUTCMilliseconds(); return ms - back; }
   const fmtMs = ms => { const t = new Date(ms), p = n => String(n).padStart(2, '0'); return `${t.getUTCFullYear()}-${p(t.getUTCMonth() + 1)}-${p(t.getUTCDate())} ${p(t.getUTCHours())}:${p(t.getUTCMinutes())}`; };
-  function juChaiBu(solar, jqSolar) {
+  function juChaiBu(solar, jqSolar, rule) {
     const nowMs = msOf(solar.toYmdHms());
     const off = jqSolar ? nowMs - msOf(jqSolar.toYmdHms()) : 0; // 真太阳时与北京时间之差
     const list = jieqiList(solar.getYear() - 1, solar.getYear() + 1);
     let cur = null, curStart = 0;
-    for (const j of list) { const st = shiStartMs(msOf(j.ts) + off); if (st <= nowMs) { cur = j; curStart = st; } }
+    for (const j of list) { const st = rule === 'moment' ? msOf(j.ts) + off : shiStartMs(msOf(j.ts) + off); if (st <= nowMs) { cur = j; curStart = st; } }
     const dn = qmDayNum(solar);
     const ft = fuTouOf(dn);
     const yang = isYangJQ(cur.name);
     return {
       method: '拆补法', jieqi: cur.name, jieqiTime: cur.ts, yang, yuan: ft.yuan,
       ju: JU_TABLE[cur.name][ft.yuan], fuTou: ft,
-      note: `当前节气「${cur.name}」（交节 ${cur.ts}${jqSolar ? ' 北京时间' : ''}，自交节时辰 ${fmtMs(curStart).slice(5)} 起换局）。日干支 ${GZ[dayGzIdx(dn)]}，符头为 ${ft.gz}（${ft.gz[1]} 属${['子午卯酉', '寅申巳亥', '辰戌丑未'][ft.yuan]}）→ ${YUAN[ft.yuan]}。`
+      note: `当前节气「${cur.name}」（交节 ${cur.ts}${jqSolar ? ' 北京时间' : ''}，${rule === 'moment' ? '按交节时刻' : '自交节时辰 ' + fmtMs(curStart).slice(5) + ' 起'}换局）。日干支 ${GZ[dayGzIdx(dn)]}，符头为 ${ft.gz}（${ft.gz[1]} 属${['子午卯酉', '寅申巳亥', '辰戌丑未'][ft.yuan]}）→ ${YUAN[ft.yuan]}。`
     };
   }
 
@@ -134,10 +134,10 @@
   function paiPan(solar, opts = {}) {
     const method = opts.method || 'chaibu';
     const lunar = solar.getLunar();
-    const ju = method === 'zhirun' ? juZhiRun(solar) : juChaiBu(solar, opts.jqSolar);
+    const ju = method === 'zhirun' ? juZhiRun(solar) : juChaiBu(solar, opts.jqSolar, opts.jqRule);
     const yang = ju.yang, J = ju.ju;
     const gz = {
-      year: (opts.jqSolar ? opts.jqSolar.getLunar() : lunar).getYearInGanZhiByLiChun(),
+      year: (opts.jqSolar ? opts.jqSolar.getLunar() : lunar).getYearInGanZhiExact(),
       month: (opts.jqSolar ? opts.jqSolar.getLunar() : lunar).getMonthInGanZhiExact(),
       day: lunar.getDayInGanZhiExact(), hour: lunar.getTimeInGanZhi()
     };

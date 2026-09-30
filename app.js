@@ -25,6 +25,7 @@ const SCENES=[
  {id:'crime',n:'刑事案件',kb:'刑事案件预测',roles:[{k:'玄',w:'玄武',d:'小偷、轻微犯罪'},{k:'蓬',w:'天蓬',d:'抢劫杀人、重案'},{k:'罪',w:'辛',d:'罪人'},{k:'警',w:'伤门',d:'公安捕盗'},{k:'捕',w:'白虎',d:'捕盗之人'},{k:'逃',w:'六合',d:'逃犯'},{k:'藏',w:'杜门',d:'藏匿方向'}]},
  {id:'lawsuit',n:'官司诉讼',kb:'官司诉讼预测',roles:[{k:'原',w:'值符',d:'原告'},{k:'被',w:'@天乙',d:'被告（天乙：值符落宫原有之星）'},{k:'法',w:'开门',d:'法官'},{k:'证',w:'六合',d:'证人、证据'},{k:'状',w:'景门',d:'诉状'},{k:'票',w:'丁',d:'传票'},{k:'律',w:'惊门',d:'律师'},{k:'罪',w:'辛',d:'罪人'}]},
  {id:'sports',n:'体育竞赛',kb:'体育竞赛预测',roles:[{k:'裁',w:'值符',d:'裁判'},{k:'主',w:'@地时',d:'主队（地盘时干）'},{k:'客',w:'@时',d:'客队（天盘时干）'},{k:'球',w:'庚',d:'比赛器械、球'},{k:'金',w:'辛',d:'金牌'},{k:'教',w:'景门',d:'技术指导、教练'}]},
+ {id:'compete',n:'竞争评比',kb:'竞争评比预测',roles:[{k:'我',w:'@日',d:'本方、求测人'},{k:'位',w:'开门',d:'所争职位、审批机关'},{k:'民',w:'@时',d:'选民、事体'},{k:'敌',w:'@月',d:'主要竞争对手'},{k:'裁',w:'值符',d:'裁判、评委'},{k:'票',w:'丁',d:'选票、批文'},{k:'状',w:'景门',d:'告状信、战略'},{k:'金',w:'辛',d:'金牌、第一'}]},
  {id:'military',n:'军事对抗',kb:'军事与对抗预测',roles:[{k:'主',w:'值符',d:'主方、守方'},{k:'客',w:'庚',d:'客方、攻方'},{k:'情',w:'景门',d:'情报、破阵'},{k:'惊',w:'惊门',d:'治乱'},{k:'官',w:'开门',d:'主官'}]},
  {id:'weather',n:'天时气象',kb:'天时气象预测',roles:[{k:'晴',w:'天英',d:'火神，主晴'},{k:'风',w:'天辅',d:'风伯，主风'},{k:'雨',w:'天柱',d:'雨师，主雨'},{k:'水',w:'天蓬',d:'水神'},{k:'雷',w:'天冲',d:'雷公'}]},
  {id:'geography',n:'地理住宅',kb:'地理环境（住宅、墓地）预测',roles:[{k:'人',w:'@日',d:'人'},{k:'宅',w:'@时',d:'住宅'},{k:'房',w:'生门',d:'房屋'},{k:'地',w:'死门',d:'地皮、宅基、阴宅'},{k:'新',w:'值符',d:'新宅'}]},
@@ -53,7 +54,7 @@ function sceneMarks(r){const sc=SCENES.find(x=>x.id===state.scene);const m={};if
   sc.roles.forEach(ro=>{findRole(r,ro.w).ps.forEach(q=>{(m[q]=m[q]||[]).push(ro);});});return m;}
 
 
-let state={scene:'',dt:null,method:'chaibu',res:null,sel:null,birth:null,tst:false,city:'101.69,8',lon:101.69,tz:-new Date().getTimezoneOffset()/60};
+let state={jqRule:'shi',scene:'',dt:null,method:'chaibu',res:null,sel:null,birth:null,tst:false,city:'101.69,8',lon:101.69,tz:-new Date().getTimezoneOffset()/60};
 try{const m=localStorage.getItem('qm-method');if(m==='zhirun'||m==='chaibu')state.method=m;
   const s=JSON.parse(localStorage.getItem('qm-solar')||'null');if(s){state.tst=!!s.tst;state.city=s.city;state.lon=+s.lon;state.tz=+s.tz;}}catch(e){}
 try{const b=+localStorage.getItem('qm-birth');if(b>=1900&&b<=2100)state.birth=b;}catch(e){}
@@ -73,10 +74,10 @@ function compute(){
     const hm=s.solar.toYmdHms().slice(0,16);
     const note=`真太阳时：钟表 ${pad(H)}:${pad(MI)}（UTC+${state.tz}）经度差 ${fmtMin(s.lonMin)}、均时差 ${fmtMin(s.eot)}，得 ${hm}；四柱时日按真太阳时，节气与年月柱按实际交节时刻。`;
     $('#solarOut').innerHTML=`→ 真太阳时 <b>${hm.slice(11)}</b>${hm.slice(0,10)!==`${Y}-${pad(M)}-${pad(D)}`?'（'+hm.slice(5,10)+'）':''} · 经度差 ${fmtMin(s.lonMin)} · 均时差 ${fmtMin(s.eot)}`;
-    state.res=QM.paiPan(s.solar,{method:state.method,jqSolar:s.jqSolar,timeNote:note});
+    state.res=QM.paiPan(s.solar,{method:state.method,jqRule:state.jqRule,jqSolar:s.jqSolar,timeNote:note});
   } else {
     $('#solarOut').textContent=state.tst?'请填写经度和时区。':'未校正，按钟表时间起局。';
-    state.res=QM.fromDate(Y,M,D,H,MI,{method:state.method});
+    state.res=QM.fromDate(Y,M,D,H,MI,{method:state.method,jqRule:state.jqRule});
   }
   render();
   if(window.renderLP&&!$('#view-lp').hidden)renderLP();
@@ -213,7 +214,33 @@ function renderScene(){
     return `<tr><td><span class="b sc">${ro.k}</span></td><td><b>${esc(f.sym)}</b><div class="muted" style="font-size:12px">${esc(ro.d)}</div></td><td>${where}</td><td>${kwChips(kw)}</td></tr>`;}).join('');
   el.innerHTML=`<h2>定向断卦 · ${sc.n} <span class="sub">盘上标签就是这些用神</span></h2>
     <div class="kbt-wrap"><table class="kbt sc-tbl"><thead><tr><th></th><th>用神</th><th>落宫</th><th>本类取象</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="note-s">点落宫可看整宫释义（其中有“本类取象”）。取用规则和实例：<button class="kblink" data-kb="${sc.kb}">知识库「${sc.kb}」→</button></p>`;
+    <p class="note-s">点落宫可看整宫释义（其中有“本类取象”）。取用规则和实例：<button class="kblink" data-kb="${sc.kb}">知识库「${sc.kb}」→</button></p>${renderGuide(sc)}`;
+}
+function renderGuide(sc){
+  const r=state.res,mz=r.gz.month[1],mw=ZWX[mz];
+  const inner=r.yang?[1,8,3,4]:[9,2,7,6];
+  const pn=q=>`${r.palaces[q].gua}${NUMCN[q-1]}宫`;
+  const flags=[];
+  if(r.starRot===0)flags.push('九星伏吟');if(r.starRot===4)flags.push('九星反吟');if(r.doorRot===0)flags.push('八门伏吟');if(r.doorRot===4)flags.push('八门反吟');
+  if(r.patterns.some(p=>p.name==='五不遇时'))flags.push('五不遇时');
+  const roles=sc.roles.map(ro=>({ro,f:findRole(r,ro.w)})).filter(x=>x.f.ps.length);
+  const step=(n,t,b)=>`<li><b>${t}</b>${b}</li>`;
+  const s1=`<p>${r.gz.month}月，月令${mz}属<b>${mw}</b>；${r.yang?'阳':'阴'}遁${NUMCN[r.J-1]}局，内盘为 ${inner.map(pn).join('、')}。${flags.length?'本局有 <b>'+flags.join('、')+'</b>：伏吟主迟、主静，反吟主快、主反复，五不遇时诸事不顺。':'本局没有伏吟、反吟或五不遇时。'}</p>`;
+  const s2=`<p>${roles.map(x=>`<span class="b sc">${x.ro.k}</span> ${esc(x.f.sym)}→${x.f.ps.map(pn).join('、')}`).join('；')||'—'}</p>`;
+  const s3='<ul>'+roles.slice(0,5).map(({ro,f})=>{const q=f.ps[0],g=r.palaces[q];const st=QM.doorState(g.door,q);
+    const tg=g.tian,dg=g.di,tw=INFO.gan[tg][1],dw=INFO.gan[dg][1];
+    const zk=tw===dw?'天地盘比和':WK[tw]===dw?'天盘克地盘，利客':WK[dw]===tw?'地盘克天盘，利主':WS[tw]===dw?'天盘生地盘':'地盘生天盘';
+    return `<li><span class="b sc">${ro.k}</span> ${pn(q)}：神<b>${g.god}</b>；星<b>${g.star}</b>（${starWS(INFO.star[g.star][1],mw)}）；门<b>${g.door}</b>（${doorWS(INFO.door[g.door][1],mw)}${st.length?'，'+st.join('、'):''}）；${tg}加${dg}，${zk}${GANKE[tg+dg]?'（'+GANKE[tg+dg][0].replace(/（.*）/,'')+'）':''}。</li>`}).join('')+'</ul>';
+  let s4='';
+  if(roles.length>=2){const pairs=[];for(let i=0;i<Math.min(roles.length,4);i++)for(let j=i+1;j<Math.min(roles.length,4);j++){const a=roles[i],b=roles[j];const qa=a.f.ps[0],qb=b.f.ps[0];
+      pairs.push(qa===qb?`<li>${a.ro.k}与${b.ro.k}同宫（${pn(qa)}）：关系紧密。</li>`:`<li>${a.ro.k}（${pn(qa)}）与${b.ro.k}（${pn(qb)}）：${rel(r.palaces[qa].wx,r.palaces[qb].wx,a.ro.k,b.ro.k)}。</li>`);}
+    s4='<ul>'+pairs.join('')+'</ul>';} else s4='<p>用神不足两个，横看从略。</p>';
+  const s5='<ul>'+roles.slice(0,5).map(({ro,f})=>{const q=f.ps[0];return `<li><span class="b sc">${ro.k}</span> ${pn(q)}：${inner.includes(q)?'内盘，近、快':'外盘，远、慢'}；宫${r.palaces[q].wx}在月令为「${doorWS(r.palaces[q].wx,mw)}」${r.palaces[q].kong?'；逢空亡':''}${r.palaces[q].ma?'；临驿马，动':''}。</li>`}).join('')+'</ul>';
+  const ks=roles.filter(x=>x.f.ps.some(q=>r.palaces[q].kong));
+  const s6=`<ul><li>值使${r.zhiShi}落${pn(r.zhiShiPal)}：宫数可作天数、月数等参考。</li>${ks.length?`<li>${ks.map(x=>x.ro.k).join('、')}逢空亡（${r.kong.join('')}）：出空、填实或冲空之时应。</li>`:''}<li>驿马在${r.ma}：马动、冲马之时事动。</li><li>成功类、失败类、破获找寻类各有不同的定法：<button class="kblink" data-kb="应期三大类">应期三大类 →</button></li></ul>`;
+  return `<details class="guide" open><summary><b>断盘向导</b> · 按步骤看这一盘</summary><ol class="guide-steps">
+    ${step(1,'准备：看大环境',s1)}${step(2,'找用神',s2)}${step(3,'竖看：每个用神宫的天、地、人、神与主客',s3)}${step(4,'横看：用神之间的生克',s4)}${step(5,'远近快慢与旺衰',s5)}${step(6,'定应期（提示）',s6)}
+    </ol><p class="note-s">向导只列出盘面事实，吉凶成败要综合判断。详见 <button class="kblink" data-kb="断盘的准备与竖看横看">断盘的准备与竖看横看 →</button></p></details>`;
 }
 function renderExplain(){
   const r=state.res, s=state.sel, el=$('#explain');
@@ -314,7 +341,11 @@ try{const f=localStorage.getItem('qm-patf');if(['all','ji','xiong','use'].includ
 $('#method').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.method=b.dataset.m;
   try{localStorage.setItem('qm-method',state.method)}catch(err){}
   syncMethod();compute();if(!$('#view-cal').hidden)renderCal();});
-function syncMethod(){document.querySelectorAll('#method button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===state.method));}
+function syncMethod(){document.querySelectorAll('#method button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===state.method));
+  document.querySelectorAll('#jqrule button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.r===state.jqRule);b.disabled=state.method==='zhirun';});}
+try{const v=localStorage.getItem('qm-jqrule');if(v==='moment'||v==='shi')state.jqRule=v;}catch(e){}
+$('#jqrule').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;state.jqRule=b.dataset.r;try{localStorage.setItem('qm-jqrule',state.jqRule)}catch(err){}
+  syncMethod();compute();if(!$('#view-cal').hidden)renderCal();});
 
 // tabs
 const views={pan:'#view-pan',lp:'#view-lp',cal:'#view-cal',quiz:'#view-quiz',kb:'#view-kb',guide:'#view-guide'};
@@ -469,7 +500,7 @@ function renderCal(){
   const total=Math.ceil((lead+days)/7)*7;
   for(let i=0;i<total;i++){
     const s=start.next(i),l=s.getLunar();const [cls,lab]=dayLabel(s,l);
-    const r=QM.fromDate(s.getYear(),s.getMonth(),s.getDay(),12,0,{method:state.method});
+    const r=QM.fromDate(s.getYear(),s.getMonth(),s.getDay(),12,0,{method:state.method,jqRule:state.jqRule});
     const gz=l.getDayInGanZhi();const ft='甲己'.includes(gz[0]);
     const key=[s.getYear(),s.getMonth(),s.getDay()];
     const sel=calState.sel&&calState.sel.join('-')===key.join('-');
@@ -484,14 +515,14 @@ function renderCal(){
 function renderCalDetail(){
   if(!calState.sel){$('#calDetail').innerHTML='';return;}
   const [y,m,d]=calState.sel;const s=Solar.fromYmd(y,m,d),l=s.getLunar();
-  const r=QM.fromDate(y,m,d,12,0,{method:state.method});
+  const r=QM.fromDate(y,m,d,12,0,{method:state.method,jqRule:state.jqRule});
   const prev=l.getPrevJieQi(true),next=l.getNextJieQi(true);
   const fest=[...l.getFestivals(),...s.getFestivals()];
   const now=new Date();const isToday=now.getFullYear()===y&&now.getMonth()+1===m&&now.getDate()===d;
   const times=l.getTimes();
   const rows=times.map((t,i)=>{
     const h=i===0?0:(i===12?23:2*i-1);const mi=30;
-    const rr=QM.fromDate(y,m,d,h,mi,{method:state.method});
+    const rr=QM.fromDate(y,m,d,h,mi,{method:state.method,jqRule:state.jqRule});
     const range=i===0?'00:00–00:59':i===12?'23:00–23:59':`${pad(2*i-1)}:00–${pad(2*i)}:59`;
     const nm=(i===0?'早':i===12?'晚':'')+t.getZhi()+'时';
     const cur=isToday&&((i===0&&now.getHours()===0)||(i===12&&now.getHours()===23)||(i>0&&i<12&&Math.floor((now.getHours()+1)/2)===i));
@@ -609,10 +640,39 @@ const quiz={level:'1',cur:null,right:0,total:0};
 const rnd=n=>Math.floor(Math.random()*n);
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
 function pickOpts(correct,pool){const s=new Set([correct]);const p=shuffle(pool.filter(x=>x!==correct));while(s.size<4&&p.length)s.add(p.pop());return shuffle([...s]);}
+
+function showQ(q,lines){
+  q.opts=q.opts||pickOpts(q.ans,q.pool);q.done=false;quiz.cur=q;
+  $('#qgiven').innerHTML=lines.join('');$('#qtext').textContent=q.text;
+  $('#qopts').innerHTML=q.opts.map(o=>`<button data-o="${esc(o)}">${esc(o)}</button>`).join('');
+  $('#qfb').innerHTML='';$('#qshow').hidden=!q.r;
+}
+const RULE_OPTS=['星、门全部伏吟','只有八门伏吟','只有九星伏吟','星、门都不伏吟'];
+function newRuleQ(){
+  // 挑一个特殊时辰：六甲时、六癸时，或普通时辰
+  const want=['甲','癸','x'][rnd(3)];let r,y,m,d,h;
+  for(let k=0;k<400;k++){y=1990+rnd(46);m=1+rnd(12);d=1+rnd(28);h=1+2*rnd(11);r=QM.fromDate(y,m,d,h,0,{method:state.method,jqRule:state.jqRule});
+    const g=r.gz.hour[0];if(want==='x'?(g!=='甲'&&g!=='癸'):g===want)break;}
+  const sp=r.starRot===0,dp=r.doorRot===0;const ans=sp&&dp?RULE_OPTS[0]:dp?RULE_OPTS[1]:sp?RULE_OPTS[2]:RULE_OPTS[3];
+  const g=r.gz.hour[0];
+  const why=g==='甲'?'六甲时（旬首之时）：值符随时干回到旬首本宫，值使走 0 步，所以星门全部伏吟，天盘干也与地盘干相同。'
+    :g==='癸'?(r.gz.hour==='癸亥'?'癸亥时属甲寅旬，甲寅遁于癸：值符随时干癸回本宫，又是癸时，值使走满九宫回本宫，所以星门全部伏吟。':'六癸时（旬尾）：值使从旬首走过九个宫次，必然回到本宫，所以八门一定伏吟；九星不一定。')
+    :`${r.gz.hour}时不是六甲时，也不是六癸时，一般不会星门伏吟（${ans}）。`;
+  showQ({text:'不用排盘，这一时辰的星、门是否伏吟？',ans,opts:RULE_OPTS,why,r},[`<div><b>${y}年${m}月${d}日 ${pad(h)}:00</b></div>`,`<div>四柱：${r.gz.year} ${r.gz.month} ${r.gz.day} <b>${r.gz.hour}</b></div>`,
+    `<details><summary>需要提示</summary><div class="note-s">看时干：甲时是旬首，癸时是旬尾；癸亥时还要想想它属哪一旬、那个甲遁在哪个仪。</div></details>`]);
+}
+const roleName=w=>w[0]==='#'?QM.GONG[+w.slice(1)]+'宫':w[0]==='@'?({日:'日干',时:'时干',年:'年干',月:'月干',天乙:'天乙',地时:'地盘时干'})[w.slice(1)]:w;
+function newUseQ(){
+  const sc=SCENES[rnd(SCENES.length)];const ro=sc.roles[rnd(sc.roles.length)];
+  const pool=[...new Set(SCENES.flatMap(x=>x.roles.map(y=>roleName(y.w))))];
+  const ans=roleName(ro.w);
+  showQ({text:`问「${sc.n}」时，${ro.d.split('（')[0]}看什么？`,ans,pool:pool.filter(x=>x!==ans),why:`${sc.n}：${ro.d}取${ans}。详见知识库「${sc.kb}」。`,r:null},
+    [`<div>取用神练习 · ${sc.n}</div>`,`<details><summary>需要提示</summary><div class="note-s">${sc.roles.filter(x=>x!==ro).slice(0,3).map(x=>x.d.split('（')[0]+'看'+roleName(x.w)).join('；')}……</div></details>`]);
+}
 function newQ(){
   const y=1990+rnd(46),m=1+rnd(12),d=1+rnd(28),h=rnd(24),mi=rnd(60);
-  const r=QM.fromDate(y,m,d,h,mi,{method:state.method});
-  let lv=quiz.level==='0'?String(1+rnd(3)):quiz.level;
+  const r=QM.fromDate(y,m,d,h,mi,{method:state.method,jqRule:state.jqRule});
+  let lv=quiz.level==='0'?String(1+rnd(5)):quiz.level;
   const juName=x=>`${x.yang?'阳':'阴'}遁${NUMCN[x.J-1]}局`;
   const allJu=[];for(const yy of ['阳','阴'])for(let k=0;k<9;k++)allJu.push(`${yy}遁${NUMCN[k]}局`);
   const stars=Object.keys(INFO.star),doors=Object.keys(INFO.door);
@@ -626,6 +686,10 @@ function newQ(){
     if(t===0)q={text:'值符是哪颗星？',ans:r.zhiFu,pool:stars,given:['局','时柱'],why:r.steps[3].d};
     else if(t===1)q={text:'值使是哪个门？',ans:r.zhiShi,pool:doors,given:['局','时柱'],why:r.steps[3].d};
     else q={text:'时柱的旬首遁于哪个仪？',ans:r.xunYi,pool:'戊己庚辛壬癸'.split(''),given:['时柱'],why:r.steps[3].d};
+  } else if(lv==='4'){
+    return newRuleQ();
+  } else if(lv==='5'){
+    return newUseQ();
   } else {
     const t=rnd(3);const pals=[1,2,3,4,6,7,8,9];const p=pals[rnd(8)];const g=r.palaces[p];
     const gname=`${g.gua}${NUMCN[p-1]}宫`;
